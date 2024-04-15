@@ -42,13 +42,39 @@
    
    $reset = *reset;
    
-   $next_pc[31:0] =
-      $reset
-         ? 0 :
-      ? $pc + 1
+   // program counter, starts at 0
+   $pc[31:0] = >>1$next_pc;
+   $next_pc[31:0] = $reset ? 0 : $pc + 1;
    
-   $pc = >>1$next_pc;
+   // memory with addr $pc and data $$instr
+   `READONLY_MEM($pc, $$instr[31:0])
    
+   $is_u_instr = $instr[6:2] ==? 5'b0x101;
+   $is_b_instr = $instr[6:2] == 5'b11000;
+   $is_j_instr = $instr[6:2] == 5'b11011;
+   
+   $is_i_instr = $instr[6:2] ==? 5'b0000x || 
+                 $instr[6:2] ==? 5'b001x0 || 
+                 $instr[6:2] ==  5'b00110 || 
+                 $instr[6:2] ==  5'b11001;
+   
+   $is_r_instr = $instr[6:2] ==? 5'b011x0 || 
+                 $instr[6:2] ==  5'b01011 || 
+                 $instr[6:2] ==  5'b10100;
+   
+   $is_s_instr = $instr[6:2] ==? 5'b0100x;
+   
+   $func3[2:0] = $instr[14:12];
+   $rs1[4:0] = $instr[19:15];
+   $rs2[4:0] = $instr[24:20];
+   $rd[4:0] = $instr[11:7];
+   $opcode[6:0] = $instr[6:0];
+   
+   $func3_valid = $is_r_instr || $is_i_instr || $is_s_instr || $is_b_instr;
+   $rs1_valid = $func3_valid;
+   
+   $rs2_valid = $is_r_instr || $is_s_instr || $is_b_instr;
+   $rd_valid = $is_r_instr || $is_i_instr || $is_u_instr || $is_j_instr;
    
    
    // Assert these to end simulation (before Makerchip cycle limit).
